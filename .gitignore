@@ -1,0 +1,37 @@
+# Build artifacts
+build/
+build-*/
+out/
+cmake-build-*/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.sln
+*.vcxproj*
+CMakeUserPresets.json
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# JUCE generated
+JuceLibraryCode/
+*_artefacts/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local config / secrets
+*.local
+.env
+.env.*
+
+# Roland firmware — DO NOT COMMIT. User-supplied only.
+*.bin
+roms/

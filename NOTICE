@@ -1,0 +1,74 @@
+nuked-sc55-juce — third-party notices
+======================================
+
+This project is a JUCE-based standalone host that links against the
+Nuked-SC55 Roland Sound Canvas / JV-880 hardware emulator and against the
+JUCE audio framework. Both have license terms that you must understand
+before redistributing this software.
+
+
+1. Nuked-SC55
+-------------
+
+   Upstream:  https://github.com/nukeykt/Nuked-SC55
+   Fork used: https://github.com/jcmoyer/Nuked-SC55 (as a git submodule
+              under external/Nuked-SC55)
+   Copyright: (C) 2021, 2024 nukeykt
+
+   Nuked-SC55 is distributed under a BSD-style license with an ADDED
+   non-commercial restriction. The relevant clause from every source
+   file's header reads:
+
+       "Redistributions may not be sold, nor may they be used in a
+        commercial product or activity."
+
+   This means:
+     - You MAY clone this repository, build it, and use it personally.
+     - You MAY redistribute MODIFICATIONS of the source code, provided
+       you keep the same license terms.
+     - You MAY NOT sell binaries that include Nuked-SC55 code.
+     - You MAY NOT include Nuked-SC55 in a commercial product or
+       commercial activity.
+
+   This non-commercial clause is the reason this repository ships SOURCE
+   ONLY and does not provide compiled binary releases. If you produce a
+   compiled binary, you are responsible for ensuring your distribution
+   of that binary complies with the Nuked-SC55 license.
+
+
+2. JUCE
+-------
+
+   https://juce.com
+   Copyright (c) Raw Material Software Limited.
+
+   JUCE is dual-licensed:
+     - GPLv3 for open-source projects
+     - Commercial license available from Raw Material Software for
+       closed-source / commercial work
+
+   You build this project against your own JUCE installation, whose
+   license terms you have already accepted. This repository does NOT
+   redistribute JUCE source.
+
+
+3. Roland firmware (SC-55 / SC-55mk2 / CM-300 / JV-880 / etc. ROMs)
+-------------------------------------------------------------------
+
+   The Nuked-SC55 emulator requires ROM image files originating from
+   Roland hardware. Those ROMs are copyrighted by Roland Corporation
+   and are NOT distributed with this project. You must supply your own
+   ROM dumps, which you should obtain only by legal means (typically
+   by dumping the chips from hardware you own).
+
+   The application loads ROMs at runtime from a directory you specify.
+   No ROM content is bundled in any way.
+
+
+4. The wrapper code in src/ and CMakeLists.txt
+----------------------------------------------
+
+   The wrapper code in this repository is licensed under the MIT license
+   (see LICENSE). However, because this code is designed to be combined
+   with Nuked-SC55, the combined work is bound by Nuked-SC55's
+   non-commercial restriction in practice.
