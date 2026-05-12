@@ -78,6 +78,12 @@ public:
     // written; the remainder of the buffer is zeroed.
     int pullSamples (float* outL, float* outR, int numFrames);
 
+    // Diagnostics (cheap atomic reads).
+    uint64_t getTotalSamplesProduced() const;
+    uint64_t getTotalMidiBytesProcessed() const;
+    int      getAudioFifoUsedPercent() const;
+    float    getPeakLevel() const; // absolute peak as float (~0.0–1.0)
+
 private:
     class Impl;
     std::unique_ptr<Impl> impl;

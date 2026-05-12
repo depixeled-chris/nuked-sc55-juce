@@ -52,7 +52,7 @@ private:
     int scratchCapacity = 0;
 
     // UI
-    juce::Label    headerLabel { {}, "Nuked SC-55 / JV-880 — JUCE host" };
+    juce::Label    headerLabel { {}, "Nuked SC-55 / JV-880 - JUCE host" };
     juce::Label    statusLabel;
 
     juce::Label    modelLabel { {}, "Model:" };
@@ -72,8 +72,7 @@ private:
     juce::TextButton stopButton  { "Stop" };
     juce::TextButton gsResetButton { "GS Reset" };
 
-    juce::Label                 audioSettingsLabel { {}, "Audio device:" };
-    std::unique_ptr<juce::AudioDeviceSelectorComponent> audioSelector;
+    juce::TextButton audioSettingsButton { "Audio Settings..." };
 
     // Subsystems
     juce::AudioDeviceManager       midiDeviceManager;

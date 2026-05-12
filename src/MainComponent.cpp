@@ -6,10 +6,29 @@ namespace
     const juce::String kPropsModel    = "modelIndex";
     const juce::String kPropsMidiIn   = "midiInputIdentifier";
     const juce::String kPropsLastFile = "lastMidiFile";
+
+    static std::unique_ptr<juce::FileLogger> gLog;
+
+    static void initLogger()
+    {
+        if (gLog != nullptr) return;
+        auto exeDir = juce::File::getSpecialLocation (juce::File::currentExecutableFile).getParentDirectory();
+        auto logFile = exeDir.getChildFile ("nuked-sc55-juce.log");
+        logFile.deleteFile();
+        gLog = std::make_unique<juce::FileLogger> (logFile, "Nuked SC-55 JUCE log", 0);
+    }
+
+    static void L (const juce::String& s)
+    {
+        if (gLog != nullptr) gLog->logMessage (s);
+    }
 }
 
 MainComponent::MainComponent()
 {
+    initLogger();
+    L ("=== App starting ===");
+
     juce::PropertiesFile::Options opts;
     opts.applicationName     = "NukedSC55JUCE";
     opts.filenameSuffix      = "settings";
@@ -17,7 +36,7 @@ MainComponent::MainComponent()
     opts.folderName          = "NukedSC55JUCE";
     props.setStorageParameters (opts);
 
-    setSize (840, 560);
+    setSize (960, 580);
 
     addAndMakeVisible (headerLabel);
     headerLabel.setFont (juce::FontOptions (18.0f, juce::Font::bold));
@@ -78,18 +97,11 @@ MainComponent::MainComponent()
     addAndMakeVisible (gsResetButton);
     gsResetButton.addListener (this);
 
-    addAndMakeVisible (audioSettingsLabel);
+    addAndMakeVisible (audioSettingsButton);
+    audioSettingsButton.addListener (this);
 
     // 2 inputs minimum/max=0, 2 outputs minimum/max=2: we're an output-only host.
     setAudioChannels (0, 2);
-
-    audioSelector = std::make_unique<juce::AudioDeviceSelectorComponent> (
-        deviceManager, 0, 0, 2, 2,
-        /*showMidiInputs*/ false,
-        /*showMidiOutputs*/ false,
-        /*showChannelsAsStereoPairs*/ true,
-        /*hideAdvancedOptionsWithButton*/ true);
-    addAndMakeVisible (*audioSelector);
 
     // Hook the MIDI file player's output into the engine
     midiFilePlayer.setMessageSink ([this] (const juce::MidiMessage& m)
@@ -143,6 +155,11 @@ void MainComponent::prepareToPlay (int samplesPerBlock, double sampleRate)
     scratchL.allocate ((size_t) needed, true);
     scratchR.allocate ((size_t) needed, true);
     scratchCapacity = needed;
+
+    L ("prepareToPlay: samplesPerBlock=" + juce::String (samplesPerBlock)
+       + " sampleRate=" + juce::String (sampleRate)
+       + " engine.ready=" + juce::String ((int) engine.isReady())
+       + " ratio=" + juce::String (resampleRatio, 4));
 }
 
 void MainComponent::releaseResources()
@@ -153,6 +170,21 @@ void MainComponent::releaseResources()
 void MainComponent::getNextAudioBlock (const juce::AudioSourceChannelInfo& info)
 {
     info.clearActiveBufferRegion();
+
+    // Diagnostic: log first call and one in every 100
+    static std::atomic<int> audioCallCount { 0 };
+    const int c = audioCallCount.fetch_add (1);
+    if (c == 0 || c % 200 == 0)
+    {
+        L ("audioCallback#" + juce::String (c)
+           + " numSamples=" + juce::String (info.numSamples)
+           + " chans=" + juce::String (info.buffer->getNumChannels())
+           + " engine.ready=" + juce::String ((int) engine.isReady())
+           + " engine.running=" + juce::String ((int) engine.isRunning())
+           + " samples=" + juce::String ((juce::int64) engine.getTotalSamplesProduced())
+           + " fifo=" + juce::String (engine.getAudioFifoUsedPercent()) + "%");
+    }
+
     if (! engine.isReady() || ! engine.isRunning())
         return;
 
@@ -230,9 +262,7 @@ void MainComponent::resized()
     }
 
     area.removeFromTop (8);
-    audioSettingsLabel.setBounds (area.removeFromTop (24));
-    if (audioSelector)
-        audioSelector->setBounds (area.removeFromTop (260));
+    audioSettingsButton.setBounds (area.removeFromTop (32).reduced (0, 4));
 
     statusLabel.setBounds (area.removeFromBottom (22));
 }
@@ -261,18 +291,39 @@ void MainComponent::comboBoxChanged (juce::ComboBox* box)
 
 void MainComponent::buttonClicked (juce::Button* button)
 {
-    if (button == &romBrowseButton)
+    if (button == &romBrowseButton) {
         pickRomDirectory();
-    else if (button == &loadRomsButton)
+    } else if (button == &loadRomsButton) {
         loadRoms();
-    else if (button == &openFileButton)
+    } else if (button == &openFileButton) {
         pickMidiFile();
-    else if (button == &playButton)
+    } else if (button == &playButton) {
+        L ("Play clicked. file events=" + juce::String (midiFilePlayer.getDescription()));
         midiFilePlayer.start();
-    else if (button == &stopButton)
+        L ("After start: isPlaying=" + juce::String ((int) midiFilePlayer.isPlaying()));
+    } else if (button == &stopButton) {
+        L ("Stop clicked.");
         midiFilePlayer.stop();
-    else if (button == &gsResetButton)
+    } else if (button == &gsResetButton) {
+        L ("GS Reset clicked.");
         engine.postSystemReset (true);
+    } else if (button == &audioSettingsButton) {
+        auto* sel = new juce::AudioDeviceSelectorComponent (
+            deviceManager, 0, 0, 2, 2,
+            /*showMidiInputs*/ false,
+            /*showMidiOutputs*/ false,
+            /*showChannelsAsStereoPairs*/ true,
+            /*hideAdvancedOptionsWithButton*/ false);
+        sel->setSize (600, 500);
+        juce::DialogWindow::LaunchOptions opts;
+        opts.content.setOwned (sel);
+        opts.dialogTitle = "Audio Settings";
+        opts.dialogBackgroundColour = juce::Colour::fromRGB (28, 28, 32);
+        opts.escapeKeyTriggersCloseButton = true;
+        opts.useNativeTitleBar = true;
+        opts.resizable = true;
+        opts.launchAsync();
+    }
 }
 
 void MainComponent::handleIncomingMidiMessage (juce::MidiInput*, const juce::MidiMessage& m)
@@ -284,6 +335,17 @@ void MainComponent::timerCallback()
 {
     rebuildMidiDeviceMenu();
 
+    // Periodic state dump for debugging (once a second when running)
+    static int tickCount = 0;
+    if (engine.isReady() && (++tickCount % 10) == 0)
+    {
+        L ("[tick] samples=" + juce::String ((juce::int64) engine.getTotalSamplesProduced())
+           + " midi=" + juce::String ((juce::int64) engine.getTotalMidiBytesProcessed()) + "B"
+           + " fifo=" + juce::String (engine.getAudioFifoUsedPercent()) + "%"
+           + " filePlaying=" + juce::String ((int) midiFilePlayer.isPlaying())
+           + " filePos=" + juce::String (midiFilePlayer.getPositionSeconds(), 2) + "s");
+    }
+
     juce::String s;
     if (! engine.isReady())
     {
@@ -294,7 +356,11 @@ void MainComponent::timerCallback()
         s << "Engine: "  << NukedEngine::displayName (engine.getCurrentModel())
           << " @ "        << engine.getNativeSampleRate() << " Hz"
           << " | output " << (int) outputSampleRate         << " Hz"
-          << " | file "   << (midiFilePlayer.isPlaying() ? "playing" : "stopped");
+          << " | file "   << (midiFilePlayer.isPlaying() ? "playing" : "stopped")
+          << " | samples " << (juce::int64) engine.getTotalSamplesProduced()
+          << " | peak " << juce::String (engine.getPeakLevel(), 4)
+          << " | midi-in " << (juce::int64) engine.getTotalMidiBytesProcessed() << " B"
+          << " | fifo "    << engine.getAudioFifoUsedPercent() << "%";
     }
     statusLabel.setText (s, juce::dontSendNotification);
 
@@ -370,7 +436,7 @@ void MainComponent::pickRomDirectory()
         {
             currentRomDir = dir;
             romPathLabel.setText (dir.getFullPathName(), juce::dontSendNotification);
-            props.getUserSettings()->setValue (kPropsRomDir, dir.getFullPathName());
+            // Do NOT persist yet — only save to config after Load ROMs succeeds.
         }
     });
 }
@@ -388,17 +454,28 @@ void MainComponent::loadRoms()
     midiFilePlayer.stop();
     engine.stop();
 
+    L ("loadRoms: dir=" + currentRomDir.getFullPathName() + " modelIdx=" + juce::String (modelBox.getSelectedItemIndex()));
+
     juce::String err;
     if (! engine.loadRoms (currentRomDir, model, err))
     {
+        L ("loadRoms FAILED: " + err);
         statusLabel.setText ("ROM load failed: " + err, juce::dontSendNotification);
         return;
     }
 
+    // Only persist the directory once we know it actually contains a working romset.
+    props.getUserSettings()->setValue (kPropsRomDir, currentRomDir.getFullPathName());
+
+    L ("loadRoms OK, nativeRate=" + juce::String (engine.getNativeSampleRate()));
+
     engine.start();
+    L ("engine.start() called, isRunning=" + juce::String ((int) engine.isRunning()));
+
     resampleRatio = (double) engine.getNativeSampleRate() / juce::jmax (1.0, outputSampleRate);
     interpL.reset();
     interpR.reset();
+    L ("resampleRatio set to " + juce::String (resampleRatio, 4) + " (output rate " + juce::String (outputSampleRate) + ")");
 
     statusLabel.setText ("ROMs loaded. Engine running.", juce::dontSendNotification);
 }

@@ -133,3 +133,34 @@ target_link_libraries(NukedSC55JUCE PRIVATE
 PUBLIC
     juce::juce_recommended_config_flags
     juce::juce_recommended_warning_flags)
+
+#===============================================================================
+# Headless test runner — renders a MIDI file offline through Nuked-SC55 using
+# the same settings the GUI app saves, writes test-output.wav, and emits a
+# detailed test-runner.log. No audio device, no UI, fully deterministic.
+#===============================================================================
+juce_add_console_app(NukedTestRunner
+    PRODUCT_NAME "Nuked SC-55 TestRunner")
+
+target_sources(NukedTestRunner PRIVATE
+    src/TestRunner.cpp)
+
+target_include_directories(NukedTestRunner PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+target_compile_definitions(NukedTestRunner PRIVATE
+    JUCE_WEB_BROWSER=0
+    JUCE_USE_CURL=0
+    JUCE_STANDALONE_APPLICATION=1)
+
+target_link_libraries(NukedTestRunner PRIVATE
+    nuked_sc55_backend
+    juce::juce_audio_basics
+    juce::juce_audio_formats
+    juce::juce_core
+    juce::juce_data_structures
+    juce::juce_events
+    juce::juce_gui_basics  # needed for ScopedJuceInitialiser_GUI / PropertiesFile defaults
+PUBLIC
+    juce::juce_recommended_config_flags
+    juce::juce_recommended_warning_flags)
