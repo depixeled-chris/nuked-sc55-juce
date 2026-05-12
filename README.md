@@ -10,26 +10,44 @@ This project gives you a clean GUI to play MIDI files or stream live MIDI input 
 
 ## What's in the box
 
-- **Standalone JUCE app** that hosts the Nuked-SC55 backend on a dedicated thread.
-- **MIDI input device picker** that enumerates every system MIDI port, no fixed-size dropdown limits.
-- **MIDI file player** built on JUCE's `MidiFile` + `MidiMessageSequence`, with tempo-event handling.
-- **Audio output device picker** with sample rate, buffer size, channel selection (JUCE's standard `AudioDeviceSelectorComponent`).
-- **Model selector** covering every Romset Nuked-SC55 supports:
-  - Roland SC-55mk2 (v1.01)
-  - Roland SC-55 (v1.00 / v1.21 / v2.0)
-  - Roland SC-55st (v1.01)
-  - Roland CM-300 / SCC-1
-  - Roland SCB-55
-  - Roland RLP-3237
-  - Roland SC-155
-  - Roland SC-155mk2
-  - Roland JV-880
+### `NukedSC55JUCE` — the main standalone player
 
-What this project does *not* (yet) do:
+A Winamp/WMP-style player UI:
 
-- VST3 / AU / CLAP plugin variant (planned for v0.2).
-- Multi-instance polyphony stacking (planned for v0.2).
-- Render-to-WAV (planned for v0.2 — easy add since the audio path is already in place).
+- **Menu bar** (File / Edit / Help) with Open MIDI, Preferences, About.
+- **Now Playing** label showing the current file.
+- **Seek bar** with current/total time labels — drag to scrub, release to seek; sustained notes are silenced automatically.
+- **Transport** — Play/Pause toggle, Stop (rewinds to 0), master Volume slider.
+- **Preferences dialog** (Edit → Preferences) for all configuration:
+  - Emulator **Model** selector — every Romset Nuked-SC55 supports (SC-55mk2, SC-55, SC-55st, CM-300/SCC-1, SCB-55, RLP-3237, SC-155, SC-155mk2, JV-880).
+  - **ROM directory** picker.
+  - **MIDI input device** dropdown — enumerates every system MIDI port, no fixed-size dropdown limit (unlike many WinMM-based players).
+  - Full embedded `AudioDeviceSelectorComponent` for output device, sample rate, buffer size, channel mapping.
+- **Auto-loads ROMs on startup** when the saved path is valid. No clicks required for the common case.
+- **Settings persistence** across launches (ROM directory, model, MIDI input, last-opened MIDI file, master gain).
+- **Lenient SMF parser** that handles real-world MIDI files with trailing bytes (JUCE's strict parser rejects these).
+- **Status bar** showing live engine diagnostics: native sample rate, output rate, peak level, audio FIFO fullness.
+
+### `NukedTestRunner` — headless renderer for validation
+
+A separate console executable that reads the same saved settings as the GUI app and renders a MIDI file offline through the emulator directly. Writes a `test-output.wav` and detailed `test-runner.log`. Useful for:
+
+- Validating that ROMs load correctly without firing up the GUI.
+- Sanity-checking emulator output on a known-good MIDI.
+- CI / automated testing where no audio device is available.
+- Diagnosing GUI vs. core problems by comparing the two outputs.
+
+Override settings at the command line:
+
+```
+NukedTestRunner.exe --rom-dir="C:/path/to/roms" --model=0 --midi="C:/song.mid"
+```
+
+### What this project does *not* (yet) do
+
+- VST3 / AU / CLAP plugin variant.
+- Multi-instance polyphony stacking (Nuked has a 24-voice cap per instance; jcmoyer's fork supports stacking).
+- Reverb / chorus parameter controls.
 - LCD display recreation (would be cute, not on roadmap).
 
 ---
@@ -191,17 +209,21 @@ Output: `build/NukedSC55JUCE_artefacts/Nuked SC-55 JUCE`
 ## First run
 
 1. Launch the built executable.
-2. Click **Browse...** and pick the directory containing your dumped ROMs.
-3. Pick a **Model** from the dropdown (defaults to SC-55mk2).
-4. Click **Load ROMs**. If filenames match, the engine starts. If you get an "Incomplete ROM set" error, the error message tells you which ROM slots are missing — usually a typo in filenames.
-5. (Optional) Pick a **MIDI input** device — anything you send to it is routed live to the emulator.
-6. (Optional) Click **Open .mid...** to load a Standard MIDI File, then **Play**.
+2. Go to **Edit → Preferences...**
+3. **Model:** pick the unit you have ROMs for (defaults to SC-55mk2).
+4. **ROM directory:** click **Browse...** and pick the directory containing your dumped ROM files (e.g. `rom1.bin`, `waverom1.bin`, …).
+5. *(Optional)* **MIDI input:** pick a system MIDI port if you want to drive the emulator from a DAW or external player (e.g. a loopMIDI virtual port).
+6. *(Optional)* **Audio device:** verify your output device is correct (the picker is at the bottom of the Preferences dialog).
+7. Close Preferences. The engine auto-loads as soon as a valid ROM directory is set; the status bar will read "Engine: ... @ 66207 Hz".
+8. **File → Open MIDI...**, pick a `.mid` file.
+9. Click **Play**.
+
+On subsequent launches, ROMs auto-load from the saved path and the last-opened MIDI file is restored — you can just hit Play.
 
 If you hear nothing:
-
-- Check the **Audio device** section — is the right output device selected? Are channels mapped?
-- Click **GS Reset** — some MIDI files expect a GS reset SysEx before playing, and a missing reset is the most common silence cause.
-- Check the status bar at the bottom for engine state.
+- Check the status bar at the bottom: it shows engine state and live diagnostics (`peak` should rise above zero when audio is being produced; `fifo` should be at a healthy non-zero percentage).
+- Verify the output device in **Edit → Preferences → Audio device** — pick the right one if JUCE picked a virtual/silent default.
+- Try the headless **`NukedTestRunner.exe`** to verify the emulator works in isolation; if it produces a non-silent WAV, the problem is in the GUI's audio path, not the core.
 
 ---
 
@@ -209,21 +231,26 @@ If you hear nothing:
 
 ```
 nuked-sc55-juce/
-├── CMakeLists.txt        # Top-level build script
-├── LICENSE               # MIT for wrapper code
-├── NOTICE                # Third-party license notices
-├── README.md             # You are here
-├── .gitignore            # Excludes build artifacts AND *.bin (ROMs)
+├── CMakeLists.txt              # Top-level build script
+├── LICENSE                     # MIT for wrapper code
+├── NOTICE                      # Third-party license notices
+├── README.md                   # You are here
+├── .gitignore                  # Excludes build artifacts AND *.bin (ROMs)
 ├── external/
-│   └── Nuked-SC55/       # Git submodule — jcmoyer's fork of nukeykt/Nuked-SC55
+│   └── Nuked-SC55/             # Git submodule — jcmoyer's fork of nukeykt/Nuked-SC55
 └── src/
-    ├── Main.cpp          # JUCEApplication entry point
-    ├── MainComponent.h   # Standalone window + UI + audio callback
-    ├── MainComponent.cpp
-    ├── NukedEngine.h     # JUCE-facing facade for the Emulator class
-    ├── NukedEngine.cpp   # Pimpl impl with worker thread + ringbuffers
-    ├── MidiFilePlayer.h  # MIDI file → message-sink scheduler
-    └── MidiFilePlayer.cpp
+    ├── Main.cpp                # JUCEApplication entry, DocumentWindow
+    ├── MainComponent.h/.cpp    # Top-level UI host: menu bar, layout, audio callback
+    ├── NukedEngine.h/.cpp      # Pimpl facade over the Nuked Emulator class:
+    │                           #   - dedicated emulator worker thread
+    │                           #   - lock-free MIDI input + audio output FIFOs
+    │                           #   - atomic master gain, peak meter, diagnostics
+    ├── MidiFilePlayer.h/.cpp   # SMF playback: play/pause/stop/seek, lenient
+    │                           #   parser, atomic loadFile semantics
+    ├── SeekBar.h/.cpp          # Position slider + current/total time labels
+    ├── PlayerControls.h/.cpp   # Transport buttons + master volume
+    ├── PreferencesDialog.h/.cpp# Modal config: model, ROMs, MIDI input, audio
+    └── TestRunner.cpp          # Headless validation executable (separate target)
 ```
 
 The `external/Nuked-SC55` submodule is pinned to a specific commit. To update it:
@@ -278,31 +305,35 @@ This is the part that breaks the first time someone reaches for the emulator in 
                                       └──────────────────┘
 ```
 
-The emulator runs at a fixed native rate (66207 Hz for SC-55mk2, 64000 Hz for SC-55mk1 / CM-300 / etc.). Sample-rate conversion to the audio device rate is done with `juce::LagrangeInterpolator` in the audio callback. This is acceptable for v0.1; a higher-quality polyphase resampler is a v0.2 task if anyone notices the difference.
+The emulator runs at a fixed native rate (66207 Hz for SC-55mk2 / SC-55st / SC-155mk2, 64000 Hz for SC-55mk1 / CM-300 / SCB-55 / RLP-3237 / SC-155 / JV-880). These are *the actual hardware DAC rates* derived from the MCU's clock divider — they look weird because they aren't musical-standard rates, but that's the chip.
+
+Sample-rate conversion to the audio device rate is done with `juce::LagrangeInterpolator` in the audio callback, with **leftover-sample tracking** between blocks so no input frames get dropped (which caused audible pitch jitter in earlier versions). A polyphase resampler would be a quality upgrade but is not strictly required for normal listening.
 
 ---
 
 ## Roadmap
 
-### v0.1 (this commit)
+### Done
 
-- [x] Standalone GUI app
-- [x] All Romsets supported by Nuked-SC55
-- [x] MIDI input + MIDI file playback
-- [x] Settings persistence
+- [x] Standalone JUCE GUI with Winamp/WMP-style player layout
+- [x] All Romsets supported by Nuked-SC55 (mk1, mk2, ST, CM-300, SCB-55, RLP-3237, SC-155, SC-155mk2, JV-880)
+- [x] Live MIDI input + Standard MIDI File playback with seek / pause / stop
+- [x] Auto-load ROMs on startup; settings persistence
+- [x] Master volume control
+- [x] Headless `NukedTestRunner` for offline WAV rendering
+- [x] Lenient SMF parser (tolerates files with trailing bytes that JUCE's parser rejects)
+- [x] Leftover-aware resampler (kills the periodic jitter / pitch drift)
 
-### v0.2
+### Next
 
-- [ ] Render to WAV (offline mode — already easy given the architecture)
 - [ ] VST3 / AU / CLAP plugin variants
 - [ ] Multi-instance polyphony stacking (jcmoyer's fork supports it)
+- [ ] Render-to-WAV in the GUI app (the core path is already in `NukedTestRunner`)
 - [ ] Higher-quality polyphase resampler
-
-### v0.3 and beyond
-
-- [ ] Reverb / chorus controls (exposed by Nuked's MCU)
+- [ ] Reverb / chorus parameter controls (Nuked's MCU exposes these)
+- [ ] Playlist support
 - [ ] LCD display recreation
-- [ ] DAW-friendly tempo sync (host tempo as MIDI tempo)
+- [ ] DAW-friendly tempo sync (when running as a plugin)
 - [ ] Preset / SysEx bank loader
 
 If you want any of these, open an issue or send a PR.

@@ -58,6 +58,8 @@ private:
     double resampleRatio    = 1.0;
     juce::HeapBlock<float> scratchL, scratchR;
     int scratchCapacity = 0;
+    juce::HeapBlock<float> leftoverL, leftoverR;
+    int leftoverCount = 0;
 
     // UI
     juce::MenuBarComponent menuBar { this };

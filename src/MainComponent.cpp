@@ -134,6 +134,11 @@ void MainComponent::prepareToPlay (int samplesPerBlock, double sampleRate)
     scratchR.allocate ((size_t) needed, true);
     scratchCapacity = needed;
 
+    // Leftover buffer holds resampler "carry" between blocks — usually <8 samples.
+    leftoverL.allocate (64, true);
+    leftoverR.allocate (64, true);
+    leftoverCount = 0;
+
     L ("prepareToPlay: samplesPerBlock=" + juce::String (samplesPerBlock)
        + " sampleRate=" + juce::String (sampleRate)
        + " engine.ready=" + juce::String ((int) engine.isReady())
@@ -159,15 +164,38 @@ void MainComponent::getNextAudioBlock (const juce::AudioSourceChannelInfo& info)
         scratchCapacity = needed;
     }
 
-    engine.pullSamples (scratchL.getData(), scratchR.getData(), needed);
+    // Build the resampler input as [leftover from last block | fresh from engine].
+    // Then ask process() to produce numOut and track how many inputs it consumed,
+    // so the next block continues seamlessly.
+    if (leftoverCount > 0)
+    {
+        std::memcpy (scratchL.getData(), leftoverL.getData(), (size_t) leftoverCount * sizeof (float));
+        std::memcpy (scratchR.getData(), leftoverR.getData(), (size_t) leftoverCount * sizeof (float));
+    }
+    const int toFetch = juce::jmax (0, needed - leftoverCount);
+    engine.pullSamples (scratchL.getData() + leftoverCount,
+                        scratchR.getData() + leftoverCount,
+                        toFetch);
+    const int totalIn = leftoverCount + toFetch;
 
     auto* outL = info.buffer->getWritePointer (0, info.startSample);
     auto* outR = info.buffer->getNumChannels() > 1
                  ? info.buffer->getWritePointer (1, info.startSample)
                  : outL;
 
-    interpL.process (resampleRatio, scratchL.getData(), outL, numOut);
-    interpR.process (resampleRatio, scratchR.getData(), outR, numOut);
+    const int consumedL = interpL.process (resampleRatio, scratchL.getData(), outL, numOut);
+    const int consumedR = interpR.process (resampleRatio, scratchR.getData(), outR, numOut);
+    const int consumed  = juce::jmin (consumedL, consumedR);
+
+    const int newLeftover = juce::jmax (0, juce::jmin (totalIn - consumed, 64));
+    if (newLeftover > 0)
+    {
+        std::memcpy (leftoverL.getData(), scratchL.getData() + consumed,
+                     (size_t) newLeftover * sizeof (float));
+        std::memcpy (leftoverR.getData(), scratchR.getData() + consumed,
+                     (size_t) newLeftover * sizeof (float));
+    }
+    leftoverCount = newLeftover;
 }
 
 void MainComponent::paint (juce::Graphics& g)
