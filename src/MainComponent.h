@@ -10,6 +10,7 @@
 #include "MidiFilePlayer.h"
 #include "SeekBar.h"
 #include "PlayerControls.h"
+#include "LevelMeter.h"
 
 class MainComponent : public juce::AudioAppComponent,
                       public juce::MenuBarModel,
@@ -67,6 +68,7 @@ private:
     juce::Label   statusLabel;
     SeekBar       seekBar;
     PlayerControls controls;
+    LevelMeter    levelMeter;
 
     // Subsystems
     std::unique_ptr<juce::MidiInput> currentMidiIn;

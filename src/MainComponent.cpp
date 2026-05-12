@@ -48,7 +48,7 @@ MainComponent::MainComponent()
     const auto savedMidi  = user->getValue (kPropsMidiIn, juce::String());
     const auto savedFile  = user->getValue (kPropsLastFile, juce::String());
 
-    setSize (980, 360);
+    setSize (980, 252);
     setWantsKeyboardFocus (true);
 
     addAndMakeVisible (menuBar);
@@ -72,6 +72,9 @@ MainComponent::MainComponent()
     };
     controls.setGain (savedGain);
     engine.setMasterGain (savedGain);
+
+    addAndMakeVisible (levelMeter);
+    levelMeter.setPeakSource ([this] { return engine.getPeakLevel(); });
 
     addAndMakeVisible (statusLabel);
     statusLabel.setFont (juce::FontOptions (12.0f));
@@ -224,6 +227,9 @@ void MainComponent::resized()
 
     controls.setBounds (area.removeFromTop (44));
     area.removeFromTop (8);
+
+    levelMeter.setBounds (area.removeFromTop (14));
+    area.removeFromTop (6);
 
     statusLabel.setBounds (area.removeFromBottom (20));
 }

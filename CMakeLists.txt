@@ -102,6 +102,7 @@ juce_add_gui_app(NukedSC55JUCE
     COMPANY_NAME "nuked-sc55-juce")
 
 target_sources(NukedSC55JUCE PRIVATE
+    src/LevelMeter.cpp
     src/Main.cpp
     src/MainComponent.cpp
     src/MidiFilePlayer.cpp
