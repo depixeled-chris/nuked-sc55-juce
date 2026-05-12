@@ -73,6 +73,11 @@ MainComponent::MainComponent()
     controls.setGain (savedGain);
     engine.setMasterGain (savedGain);
 
+    addAndMakeVisible (levelMeterLabel);
+    levelMeterLabel.setFont (juce::FontOptions (11.0f, juce::Font::bold));
+    levelMeterLabel.setColour (juce::Label::textColourId, juce::Colour::fromRGB (130, 130, 140));
+    levelMeterLabel.setJustificationType (juce::Justification::centredRight);
+
     addAndMakeVisible (levelMeter);
     levelMeter.setPeakSource ([this] { return engine.getPeakLevel(); });
 
@@ -228,7 +233,12 @@ void MainComponent::resized()
     controls.setBounds (area.removeFromTop (44));
     area.removeFromTop (8);
 
-    levelMeter.setBounds (area.removeFromTop (14));
+    {
+        auto meterRow = area.removeFromTop (14);
+        levelMeter.setBounds      (meterRow.removeFromRight (220));
+        meterRow.removeFromRight (4);
+        levelMeterLabel.setBounds (meterRow.removeFromRight (32));
+    }
     area.removeFromTop (6);
 
     statusLabel.setBounds (area.removeFromBottom (20));

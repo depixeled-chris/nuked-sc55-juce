@@ -68,6 +68,7 @@ private:
     juce::Label   statusLabel;
     SeekBar       seekBar;
     PlayerControls controls;
+    juce::Label   levelMeterLabel { {}, "OUT" };
     LevelMeter    levelMeter;
 
     // Subsystems
