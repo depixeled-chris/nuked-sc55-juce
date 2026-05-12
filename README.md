@@ -16,12 +16,12 @@ A Winamp/WMP-style player UI:
 
 - **Menu bar** (File / Edit / Help) with Open MIDI, Preferences, About.
 - **Now Playing** label showing the current file.
-- **Seek bar** with current/total time labels — drag to scrub, release to seek; sustained notes are silenced automatically.
-- **Transport** — Play/Pause toggle, Stop (rewinds to 0), master Volume slider.
+- **Seek bar** with current/total time labels. Drag to scrub, release to seek; sustained notes are silenced automatically.
+- **Transport**: Play/Pause toggle, Stop (rewinds to 0), master Volume slider.
 - **Preferences dialog** (Edit → Preferences) for all configuration:
-  - Emulator **Model** selector — every Romset Nuked-SC55 supports (SC-55mk2, SC-55, SC-55st, CM-300/SCC-1, SCB-55, RLP-3237, SC-155, SC-155mk2, JV-880).
+  - Emulator **Model** selector covering every Romset Nuked-SC55 supports (SC-55mk2, SC-55, SC-55st, CM-300/SCC-1, SCB-55, RLP-3237, SC-155, SC-155mk2, JV-880).
   - **ROM directory** picker.
-  - **MIDI input device** dropdown — enumerates every system MIDI port, no fixed-size dropdown limit (unlike many WinMM-based players).
+  - **MIDI input device** dropdown listing every system MIDI port (no fixed-size limit, unlike WinMM-based players).
   - Full embedded `AudioDeviceSelectorComponent` for output device, sample rate, buffer size, channel mapping.
 - **Auto-loads ROMs on startup** when the saved path is valid. No clicks required for the common case.
 - **Settings persistence** across launches (ROM directory, model, MIDI input, last-opened MIDI file, master gain).
@@ -70,9 +70,9 @@ That clause makes it incompatible with **GPL** (which forbids adding restriction
 |---|---|
 | Clone, build, and use this app personally | Yes |
 | Fork this repo and publish your changes (source) | Yes |
-| Distribute compiled binaries you built yourself | **Murky** — the "may not be sold" clause is about selling, but the "commercial activity" clause is broad. We don't do this from the official repo. |
+| Distribute compiled binaries you built yourself | **Murky.** The "may not be sold" clause is about selling, but the "commercial activity" clause is broad. We don't do this from the official repo. |
 | Sell binaries on a store, bundle in commercial software | **No** |
-| Use it for music you write and sell | Yes — your music is your work; this app is just a renderer. |
+| Use it for music you write and sell | Yes. Your music is your work; this app is just a renderer. |
 
 ### Why this matters for the repo
 
@@ -84,12 +84,12 @@ If you want to push for binary distribution, the right path is asking nukeykt (N
 
 ## ROM situation — read this too
 
-The Nuked-SC55 emulator is a CPU + DSP simulator. It needs the original Roland firmware ROMs to actually do anything. **Those ROMs are not in this repo and never will be** — they are copyrighted Roland firmware, and we don't have permission to redistribute them.
+The Nuked-SC55 emulator is a CPU + DSP simulator. It needs the original Roland firmware ROMs to actually do anything. **Those ROMs are not in this repo and never will be.** They're copyrighted Roland firmware and we don't have permission to redistribute them.
 
 Legitimate ways to obtain the ROMs:
 
 1. Buy an SC-55 / SC-55mk2 / CM-300 / etc. and dump the chips yourself. Used units run $80–$200 on eBay; chip dumpers (e.g. TL866II Plus) are ~$50.
-2. Some Roland soft-synth installations have shipped equivalent ROM data in encrypted form — but extracting and using it outside that product is on you, legally.
+2. Some Roland soft-synth installations have shipped equivalent ROM data in encrypted form, but extracting and using it outside that product is on you, legally.
 
 The "everyone just downloads them from archive.org" path is *technically* infringing. The community largely doesn't care, but this project does not point you at any specific source.
 
@@ -108,7 +108,7 @@ The app expects ROMs to follow Nuked-SC55's "legacy" filename scheme. Place them
 | **SC-155** | `sc155_rom1.bin`, `sc155_rom2.bin`, `sc155_waverom1.bin`, `sc155_waverom2.bin`, `sc155_waverom3.bin` |
 | **JV-880** (v1.0.0 / v1.0.1) | `jv880_rom1.bin`, `jv880_rom2.bin`, `jv880_waverom1.bin`, `jv880_waverom2.bin` |
 
-Full list and exact chip-to-filename mappings are in [`external/Nuked-SC55/doc/USAGE.md`](https://github.com/jcmoyer/Nuked-SC55/blob/master/doc/USAGE.md) (note: in your local checkout, the submodule pins a specific commit — check the `documentation/USAGE.md` inside the submodule for that exact version).
+Full list and exact chip-to-filename mappings are in [`external/Nuked-SC55/doc/USAGE.md`](https://github.com/jcmoyer/Nuked-SC55/blob/master/doc/USAGE.md). Your local checkout pins a specific submodule commit, so check `documentation/USAGE.md` inside the submodule for that exact version.
 
 ---
 
@@ -218,7 +218,7 @@ Output: `build/NukedSC55JUCE_artefacts/Nuked SC-55 JUCE`
 8. **File → Open MIDI...**, pick a `.mid` file.
 9. Click **Play**.
 
-On subsequent launches, ROMs auto-load from the saved path and the last-opened MIDI file is restored — you can just hit Play.
+On subsequent launches, ROMs auto-load from the saved path and the last-opened MIDI file is restored. Just hit Play.
 
 If you hear nothing:
 - Check the status bar at the bottom: it shows engine state and live diagnostics (`peak` should rise above zero when audio is being produced; `fifo` should be at a healthy non-zero percentage).
@@ -305,7 +305,7 @@ This is the part that breaks the first time someone reaches for the emulator in 
                                       └──────────────────┘
 ```
 
-The emulator runs at a fixed native rate (66207 Hz for SC-55mk2 / SC-55st / SC-155mk2, 64000 Hz for SC-55mk1 / CM-300 / SCB-55 / RLP-3237 / SC-155 / JV-880). These are *the actual hardware DAC rates* derived from the MCU's clock divider — they look weird because they aren't musical-standard rates, but that's the chip.
+The emulator runs at a fixed native rate (66207 Hz for SC-55mk2 / SC-55st / SC-155mk2, 64000 Hz for SC-55mk1 / CM-300 / SCB-55 / RLP-3237 / SC-155 / JV-880). These are *the actual hardware DAC rates* derived from the MCU's clock divider. They look weird because they aren't musical-standard rates, but that's the chip.
 
 Sample-rate conversion to the audio device rate is done with `juce::LagrangeInterpolator` in the audio callback, with **leftover-sample tracking** between blocks so no input frames get dropped (which caused audible pitch jitter in earlier versions). A polyphase resampler would be a quality upgrade but is not strictly required for normal listening.
 
@@ -354,7 +354,7 @@ Code style: roughly JUCE-flavored C++ (4-space indent, K&R braces, no `using nam
 
 ## Acknowledgments
 
-- **nukeykt** for the original [Nuked-SC55](https://github.com/nukeykt/Nuked-SC55) emulator — the actual achievement here. The wrapper is trivial; the emulator is years of reverse engineering.
+- **nukeykt** for the original [Nuked-SC55](https://github.com/nukeykt/Nuked-SC55) emulator. That's the real achievement; the wrapper is trivial. The emulator is years of reverse engineering.
 - **jcmoyer** for the [maintained fork](https://github.com/jcmoyer/Nuked-SC55) that exposes the emulator as a library with a clean backend API. Without that work, this wrapper would be much harder.
 - **linoshkmalayil** for the [GUI-Float fork](https://github.com/linoshkmalayil/Nuked-SC55-GUI-Float) that informed a lot of the UX decisions here.
 - **Raw Material Software** for JUCE.
