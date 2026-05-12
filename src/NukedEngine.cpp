@@ -126,6 +126,7 @@ public:
         }
 
         emu->Reset();
+        emu->GetPCM().enable_oversampling = true; // match the native-rate values we report
         emu->SetSampleCallback (&Impl::sampleCallbackTrampoline, this);
 
         currentModel = model;

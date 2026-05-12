@@ -35,9 +35,8 @@ bool MidiFilePlayer::loadFile (const juce::File& f, juce::String& err)
     lengthSeconds  = merged.getEndTime();
     nextEventIndex = 0;
     description    = f.getFileName()
-                     + juce::String::formatted (" — %d events, %.1fs",
-                                                merged.getNumEvents(),
-                                                lengthSeconds);
+                     + " - " + juce::String (merged.getNumEvents()) + " events, "
+                     + juce::String (lengthSeconds, 1) + "s";
     return true;
 }
 

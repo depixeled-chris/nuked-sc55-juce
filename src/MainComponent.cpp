@@ -286,13 +286,16 @@ void MainComponent::timerCallback()
 
     juce::String s;
     if (! engine.isReady())
-        s = "Engine: not ready — load ROMs to begin.";
+    {
+        s = "Engine: not ready - load ROMs to begin.";
+    }
     else
-        s = juce::String::formatted ("Engine: %s @ %d Hz | output %0.0f Hz | file %s",
-                                     NukedEngine::displayName (engine.getCurrentModel()).toRawUTF8(),
-                                     engine.getNativeSampleRate(),
-                                     outputSampleRate,
-                                     midiFilePlayer.isPlaying() ? "playing" : "stopped");
+    {
+        s << "Engine: "  << NukedEngine::displayName (engine.getCurrentModel())
+          << " @ "        << engine.getNativeSampleRate() << " Hz"
+          << " | output " << (int) outputSampleRate         << " Hz"
+          << " | file "   << (midiFilePlayer.isPlaying() ? "playing" : "stopped");
+    }
     statusLabel.setText (s, juce::dontSendNotification);
 
     const bool fileReady = engine.isReady() && midiFilePlayer.getLengthSeconds() > 0.0;
