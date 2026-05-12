@@ -26,24 +26,31 @@ public:
 
     void setMessageSink (MessageSink sink) { messageSink = std::move (sink); }
 
-    void start();
-    void stop();
+    // Transport
+    void play();              // Start or resume from current position.
+    void pause();             // Stop dispatching but keep position (no rewind).
+    void stop();              // Stop AND rewind to position 0.
+    void seek (double seconds); // Jump to position; silences held notes if playing.
+
     bool isPlaying() const { return playing.load (std::memory_order_acquire); }
 
     double getLengthSeconds() const { return lengthSeconds; }
     double getPositionSeconds() const;
 
     juce::String getDescription() const { return description; }
+    juce::String getFilePath()    const { return currentPath; }
 
 private:
     void hiResTimerCallback() override;
+    void silenceAllNotes();
 
     juce::MidiMessageSequence merged;
-    double lengthSeconds = 0.0;
-    int    nextEventIndex = 0;
-    double playStartTimeMs = 0.0;
+    juce::String   currentPath;
+    juce::String   description;
+    double         lengthSeconds   = 0.0;
+    int            nextEventIndex  = 0;
+    double         playStartTimeMs = 0.0;
 
     MessageSink messageSink;
     std::atomic<bool> playing { false };
-    juce::String description;
 };

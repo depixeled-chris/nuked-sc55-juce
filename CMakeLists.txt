@@ -104,8 +104,11 @@ juce_add_gui_app(NukedSC55JUCE
 target_sources(NukedSC55JUCE PRIVATE
     src/Main.cpp
     src/MainComponent.cpp
+    src/MidiFilePlayer.cpp
     src/NukedEngine.cpp
-    src/MidiFilePlayer.cpp)
+    src/PlayerControls.cpp
+    src/PreferencesDialog.cpp
+    src/SeekBar.cpp)
 
 target_include_directories(NukedSC55JUCE PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src)

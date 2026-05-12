@@ -214,16 +214,17 @@ public:
 
         const auto scope = audioFifo->read (numFrames);
         const int delivered = scope.blockSize1 + scope.blockSize2;
+        const float g = masterGain.load (std::memory_order_relaxed);
 
         for (int i = 0; i < scope.blockSize1; ++i)
         {
-            outL[i] = audioL[scope.startIndex1 + i];
-            outR[i] = audioR[scope.startIndex1 + i];
+            outL[i] = audioL[scope.startIndex1 + i] * g;
+            outR[i] = audioR[scope.startIndex1 + i] * g;
         }
         for (int i = 0; i < scope.blockSize2; ++i)
         {
-            outL[scope.blockSize1 + i] = audioL[scope.startIndex2 + i];
-            outR[scope.blockSize1 + i] = audioR[scope.startIndex2 + i];
+            outL[scope.blockSize1 + i] = audioL[scope.startIndex2 + i] * g;
+            outR[scope.blockSize1 + i] = audioR[scope.startIndex2 + i] * g;
         }
 
         if (delivered < numFrames)
@@ -233,6 +234,9 @@ public:
         }
         return delivered;
     }
+
+    void  setMasterGain (float g) { masterGain.store (juce::jlimit (0.0f, 4.0f, g), std::memory_order_relaxed); }
+    float getMasterGain() const   { return masterGain.load (std::memory_order_relaxed); }
 
 private:
     void runLoop()
@@ -327,6 +331,7 @@ private:
     std::atomic<uint64_t> totalSamples { 0 };
     std::atomic<uint64_t> totalMidiBytes { 0 };
     std::atomic<int32_t>  peakAbs { 0 };
+    std::atomic<float>    masterGain { 1.0f };
 
     juce::HeapBlock<float>  audioL, audioR;
     std::unique_ptr<juce::AbstractFifo> audioFifo;
@@ -423,3 +428,5 @@ uint64_t NukedEngine::getTotalSamplesProduced() const     { return impl->getTota
 uint64_t NukedEngine::getTotalMidiBytesProcessed() const  { return impl->getTotalMidiBytesProcessed(); }
 int      NukedEngine::getAudioFifoUsedPercent() const     { return impl->getAudioFifoUsedPercent(); }
 float    NukedEngine::getPeakLevel() const                { return impl->getPeakLevel(); }
+void     NukedEngine::setMasterGain (float g)             { impl->setMasterGain (g); }
+float    NukedEngine::getMasterGain() const               { return impl->getMasterGain(); }

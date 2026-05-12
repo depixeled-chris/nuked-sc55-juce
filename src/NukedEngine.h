@@ -74,9 +74,14 @@ public:
     bool isRunning() const;
 
     // Audio thread entry. Pulls up to numFrames stereo float frames out of
-    // the ringbuffer into outL / outR. Returns the number of frames actually
-    // written; the remainder of the buffer is zeroed.
+    // the ringbuffer into outL / outR, applying the current master gain.
+    // Returns the number of frames actually written; the remainder of the
+    // buffer is zeroed.
     int pullSamples (float* outL, float* outR, int numFrames);
+
+    // Set master gain (linear, 0.0–1.0+). Realtime-safe. Default 1.0.
+    void  setMasterGain (float linearGain);
+    float getMasterGain() const;
 
     // Diagnostics (cheap atomic reads).
     uint64_t getTotalSamplesProduced() const;
