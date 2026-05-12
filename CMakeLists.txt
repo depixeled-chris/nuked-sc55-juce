@@ -5,7 +5,7 @@ project(NukedSC55JUCE
     DESCRIPTION "JUCE-based standalone host for the Nuked-SC55 emulator"
     LANGUAGES C CXX)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -82,9 +82,10 @@ add_library(nuked_sc55_backend STATIC
 
 target_include_directories(nuked_sc55_backend PUBLIC
     ${NUKED_DIR}/src
-    ${CMAKE_CURRENT_BINARY_DIR})
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}/backend)
 
-target_compile_features(nuked_sc55_backend PUBLIC cxx_std_20)
+target_compile_features(nuked_sc55_backend PUBLIC cxx_std_23)
 
 if(MSVC)
     target_compile_options(nuked_sc55_backend PRIVATE /w)
